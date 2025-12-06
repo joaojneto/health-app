@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Cadastro de Exames{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0"><i class="bi bi-file-medical"></i> Cadastro de Pedido de Exame</h3>
+                </div>
+                <div class="card-body p-4">
+                    <form id="cadastroForm" enctype="multipart/form-data">
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 mb-3">
+                                <i class="bi bi-person"></i> Dados do Paciente
+                            </h5>
+                            
+                            <div class="row">
+                                <div class="col-md-7 mb-3">
+                                    <label for="nomePaciente" class="form-label">
+                                        Nome Completo *
+                                    </label>
+                                    <input type="text" class="form-control" id="nomePaciente" 
+                                           name="nome_paciente" placeholder="Digite o nome completo do paciente" required>
+                                </div>
+                                
+                                <div class="col-md-3 mb-3">
+                                    <label for="cpf" class="form-label">
+                                        CPF *
+                                    </label>
+                                    <input type="text" class="form-control" id="cpf" 
+                                           name="cpf" placeholder="000.000.000-00" required>
+                                </div>
+
+                                <div class="col-md-2 mb-3">
+                                    <label for="sexo" class="form-label">
+                                        SEXO *
+                                    </label>
+                                    <select class="form-select" id="tipoSexo" name="tipo_sexo" required>
+                                        <option value="">Sexo</option>
+                                        <option value="masculino">Masculino</option>
+                                        <option value="feminino">Feminino</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="dataNascimento" class="form-label">
+                                    Data de Nascimento *
+                                </label>
+                                <input type="date" class="form-control" id="dataNascimento" 
+                                       name="data_nascimento" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 mb-3">
+                                <i class="bi bi-clipboard-pulse"></i> Dados do Exame
+                            </h5>
+                            
+                            <div class="mb-3">
+                                <label for="tipoExame" class="form-label">
+                                    Tipo de Exame *
+                                </label>
+                                <select class="form-select" id="tipoExame" name="tipo_exame" required>
+                                    <option value="">Selecione o tipo de exame</option>
+                                    <option value="Hemograma">Hemograma</option>
+                                    <option value="Raio-X">Raio-X</option>
+                                    <option value="Ressonância Magnética">Ressonância Magnética</option>
+                                    <option value="Tomografia">Tomografia</option>
+                                    <option value="Ultrassom">Ultrassom</option>
+                                    <option value="Eletrocardiograma">Eletrocardiograma</option>
+                                    <option value="Endoscopia">Endoscopia</option>
+                                    <option value="Colonoscopia">Colonoscopia</option>
+                                    <option value="Ecocardiograma">Ecocardiograma</option>
+                                    <option value="Mamografia">Mamografia</option>
+                                    <option value="Exame de Urina">Exame de Urina</option>
+                                    <option value="Exame de Sangue">Exame de Sangue</option>
+                                    <option value="Outros">Outros</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="observacoes" class="form-label">
+                                    Observações
+                                </label>
+                                <textarea class="form-control" id="observacoes" name="observacoes" 
+                                          rows="3" placeholder="Informações adicionais sobre o exame"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 mb-3">
+                                <i class="bi bi-file-earmark-arrow-up"></i> Documento do Pedido Médico
+                            </h5>
+                            
+                            <div class="mb-3">
+                                <label for="pedidoMedico" class="form-label">
+                                    Upload do Pedido Médico *
+                                </label>
+                                <input type="file" class="form-control" id="pedidoMedico" 
+                                       name="pedido_medico" accept="image/*,application/pdf" 
+                                       onchange="previewFile(event)" required>
+                                <small class="text-muted">Formatos aceitos: JPG, PNG, PDF (Máx: 5MB)</small>
+                            </div>
+                            
+                            <div id="filePreview" class="text-center mb-3 d-none">
+                                <p class="text-muted mb-2">Preview do arquivo:</p>
+                                <img id="filePreviewImg" src="" alt="Preview" 
+                                     style="max-height: 200px; max-width: 100%; border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px;">
+                                <p id="fileName" class="mt-2 text-muted"></p>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> 
+                            <strong>Atenção:</strong> Todos os campos marcados com * são obrigatórios. 
+                            Certifique-se de preencher corretamente antes de enviar.
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> Cadastrar Pedido de Exame
+                            </button>
+                            <button type="reset" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-counterclockwise"></i> Limpar Formulário
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Máscara para CPF
+    document.getElementById('cpf').addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length <= 11) {
+            value = value.replace(/(\d{3})(\d)/, '$1.$2');
+            value = value.replace(/(\d{3})(\d)/, '$1.$2');
+            value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+            e.target.value = value;
+        }
+    });
+    
+    function previewFile(event) {
+        const file = event.target.files[0];
+        
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                showAlert('O arquivo é muito grande. Tamanho máximo: 5MB', 'danger');
+                event.target.value = '';
+                return;
+            }
+            
+            document.getElementById('fileName').textContent = `Arquivo: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+            
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('filePreviewImg').src = e.target.result;
+                    document.getElementById('filePreview').classList.remove('d-none');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                document.getElementById('filePreviewImg').src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGZpbGw9IiM2NjdlZWEiIGQ9Ik0xNCAySDZjLTEuMSAwLTIgLjktMiAydjE2YzAgMS4xLjkgMiAyIDJoMTJjMS4xIDAgMi0uOSAyLTJWOGwtNi02em0tMSAxM0g4di0yaDV2MnptMyA0SDh2LTJoOHYyem0wLTRIOHYtMmg4djJ6bTAtNmgtNVY0bDUgNXoiLz48L3N2Zz4=';
+                document.getElementById('filePreview').classList.remove('d-none');
+            }
+        }
+    }
+    
+    document.getElementById('cadastroForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando...';
+        
+        try {
+            const formData = new FormData(e.target);
+            
+            const response = await fetch('/api/cadastrar-exame', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showAlert(result.message, 'success');
+                e.target.reset();
+                document.getElementById('filePreview').classList.add('d-none');
+                
+                setTimeout(() => {
+                    if (confirm('Deseja ir para a página de auditoria?')) {
+                        window.location.href = '/auditoria';
+                    }
+                }, 1500);
+            } else {
+                showAlert(result.message, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro ao cadastrar exame: ' + error.message, 'danger');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Cadastrar Pedido de Exame';
+        }
+    });
+    
+    // Limpa preview ao resetar formulário
+    document.getElementById('cadastroForm').addEventListener('reset', () => {
+        document.getElementById('filePreview').classList.add('d-none');
+    });
+</script>
+{% endblock %}

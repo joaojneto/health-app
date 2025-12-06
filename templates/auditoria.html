@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+
+{% block title %}Auditoria de Exames{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-badge {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+    
+    .status-pendente {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-aprovado {
+        background-color: #d1e7dd;
+        color: #0f5132;
+    }
+    
+    .status-recusado {
+        background-color: #f8d7da;
+        color: #842029;
+    }
+    
+    .exam-card {
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        transition: all 0.3s;
+        cursor: pointer;
+        background: white;
+    }
+    
+    .exam-card:hover {
+        border-color: #667eea;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        transform: translateY(-2px);
+    }
+    
+    .exam-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .exam-details {
+        flex: 1;
+        min-width: 250px;
+    }
+    
+    .exam-name {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    
+    .exam-type {
+        color: #666;
+        font-size: 0.95rem;
+    }
+    
+    .exam-date {
+        color: #999;
+        font-size: 0.85rem;
+        margin-top: 5px;
+    }
+    
+    .filter-section {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .modal-image {
+        max-width: 100%;
+        max-height: 400px;
+        object-fit: contain;
+        border-radius: 8px;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #999;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0"><i class="bi bi-clipboard-data"></i> Auditoria de Pedidos de Exames</h3>
+                    <button class="btn btn-light" onclick="carregarExames()">
+                        <i class="bi bi-arrow-clockwise"></i> Atualizar
+                    </button>
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <div class="row align-items-end">
+                    <div class="col-md-6">
+                        <label for="filtroStatus" class="form-label fw-bold">
+                            <i class="bi bi-funnel"></i> Filtrar por Status
+                        </label>
+                        <select class="form-select" id="filtroStatus" onchange="carregarExames()">
+                            <option value="todos">Todos os Status</option>
+                            <option value="pendente">Pendente</option>
+                            <option value="aprovado">Aprovado</option>
+                            <option value="recusado">Recusado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mt-3 mt-md-0">
+                        <div class="d-flex gap-3">
+                            <div class="text-center flex-fill">
+                                <div class="fw-bold" id="totalExames">0</div>
+                                <small class="text-muted">Total</small>
+                            </div>
+                            <div class="text-center flex-fill">
+                                <div class="fw-bold text-warning" id="totalPendentes">0</div>
+                                <small class="text-muted">Pendentes</small>
+                            </div>
+                            <div class="text-center flex-fill">
+                                <div class="fw-bold text-success" id="totalAprovados">0</div>
+                                <small class="text-muted">Aprovados</small>
+                            </div>
+                            <div class="text-center flex-fill">
+                                <div class="fw-bold text-danger" id="totalRecusados">0</div>
+                                <small class="text-muted">Recusados</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="loadingSpinner" class="text-center py-5 d-none">
+                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+                <p class="mt-3 text-muted">Carregando exames...</p>
+            </div>
+            
+            <div id="examesList"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Detalhes do Exame -->
+<div class="modal fade" id="exameModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h5 class="modal-title"><i class="bi bi-file-medical"></i> Detalhes do Pedido de Exame</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <strong><i class="bi bi-person"></i> Paciente:</strong>
+                        <p class="mb-0" id="modalNomePaciente"></p>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <strong><i class="bi bi-card-text"></i> CPF:</strong>
+                        <p class="mb-0" id="modalCpf"></p>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <strong><i class="bi bi-calendar"></i> Nascimento:</strong>
+                        <p class="mb-0" id="modalDataNascimento"></p>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong><i class="bi bi-clipboard-pulse"></i> Tipo de Exame:</strong>
+                        <p class="mb-0" id="modalTipoExame"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong><i class="bi bi-clock"></i> Data do Cadastro:</strong>
+                        <p class="mb-0" id="modalDataCadastro"></p>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <strong><i class="bi bi-chat-left-text"></i> Observações:</strong>
+                    <p class="mb-0" id="modalObservacoes"></p>
+                </div>
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <strong><i class="bi bi-image"></i> Pedido Médico:</strong>
+                    <div class="text-center mt-2" id="modalImagemContainer">
+                        <img id="modalImagem" src="" alt="Pedido Médico" class="modal-image">
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <form id="formAtualizacao">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="modalStatus" class="form-label fw-bold">
+                                <i class="bi bi-check-circle"></i> Status *
+                            </label>
+                            <select class="form-select" id="modalStatus" required>
+                                <option value="pendente">Pendente</option>
+                                <option value="aprovado">Aprovado</option>
+                                <option value="recusado">Recusado</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="modalDescricaoStatus" class="form-label fw-bold">
+                            <i class="bi bi-pencil-square"></i> Descrição/Justificativa
+                        </label>
+                        <textarea class="form-control" id="modalDescricaoStatus" rows="3" 
+                                  placeholder="Adicione observações sobre a decisão..."></textarea>
+                    </div>
+                    
+                    <input type="hidden" id="modalExameId">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Fechar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="salvarAlteracoes()">
+                    <i class="bi bi-save"></i> Salvar Alterações
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let examesData = [];
+    const exameModal = new bootstrap.Modal(document.getElementById('exameModal'));
+    
+    // Carrega exames ao iniciar
+    document.addEventListener('DOMContentLoaded', () => {
+        carregarExames();
+    });
+    
+    async function carregarExames() {
+        const status = document.getElementById('filtroStatus').value;
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const examesList = document.getElementById('examesList');
+        
+        loadingSpinner.classList.remove('d-none');
+        examesList.innerHTML = '';
+        
+        try {
+            const response = await fetch(`/api/listar-exames?status=${status}`);
+            const result = await response.json();
+            
+            if (result.success) {
+                examesData = result.exames;
+                renderizarExames(examesData);
+                atualizarEstatisticas(examesData);
+            } else {
+                showAlert(result.message, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro ao carregar exames: ' + error.message, 'danger');
+        } finally {
+            loadingSpinner.classList.add('d-none');
+        }
+    }
+    
+    function renderizarExames(exames) {
+        const examesList = document.getElementById('examesList');
+        
+        if (exames.length === 0) {
+            examesList.innerHTML = `
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <h4>Nenhum exame encontrado</h4>
+                    <p>Não há pedidos de exames cadastrados com os filtros selecionados.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        examesList.innerHTML = exames.map(exame => {
+            const statusClass = `status-${exame.status}`;
+            const dataCadastro = new Date(exame.data_cadastro).toLocaleString('pt-BR');
+            
+            return `
+                <div class="exam-card" onclick="abrirModal('${exame.id}')">
+                    <div class="exam-info">
+                        <div class="exam-details">
+                            <div class="exam-name">
+                                <i class="bi bi-person-fill"></i> ${exame.nome_paciente}
+                            </div>
+                            <div class="exam-type">
+                                <i class="bi bi-clipboard-pulse"></i> ${exame.tipo_exame}
+                            </div>
+                            <div class="exam-date">
+                                <i class="bi bi-clock"></i> ${dataCadastro}
+                            </div>
+                        </div>
+                        <div>
+                            <span class="status-badge ${statusClass}">
+                                ${exame.status.toUpperCase()}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    function atualizarEstatisticas(exames) {
+        const total = exames.length;
+        const pendentes = exames.filter(e => e.status === 'pendente').length;
+        const aprovados = exames.filter(e => e.status === 'aprovado').length;
+        const recusados = exames.filter(e => e.status === 'recusado').length;
+        
+        document.getElementById('totalExames').textContent = total;
+        document.getElementById('totalPendentes').textContent = pendentes;
+        document.getElementById('totalAprovados').textContent = aprovados;
+        document.getElementById('totalRecusados').textContent = recusados;
+    }
+    
+    function abrirModal(exameId) {
+        const exame = examesData.find(e => e.id === exameId);
+        
+        if (!exame) return;
+        
+        document.getElementById('modalNomePaciente').textContent = exame.nome_paciente;
+        document.getElementById('modalCpf').textContent = exame.cpf;
+        document.getElementById('modalDataNascimento').textContent = new Date(exame.data_nascimento).toLocaleDateString('pt-BR');
+        document.getElementById('modalTipoExame').textContent = exame.tipo_exame;
+        document.getElementById('modalDataCadastro').textContent = new Date(exame.data_cadastro).toLocaleString('pt-BR');
+        document.getElementById('modalObservacoes').textContent = exame.observacoes || 'Sem observações';
+        document.getElementById('modalStatus').value = exame.status;
+        document.getElementById('modalDescricaoStatus').value = exame.descricao_status || '';
+        document.getElementById('modalExameId').value = exameId;
+        
+        if (exame.pedido_medico_base64) {
+            document.getElementById('modalImagem').src = `data:image/jpeg;base64,${exame.pedido_medico_base64}`;
+            document.getElementById('modalImagemContainer').classList.remove('d-none');
+        } else {
+            document.getElementById('modalImagemContainer').innerHTML = '<p class="text-muted">Nenhum documento anexado</p>';
+        }
+        
+        exameModal.show();
+    }
+    
+    async function salvarAlteracoes() {
+        const exameId = document.getElementById('modalExameId').value;
+        const status = document.getElementById('modalStatus').value;
+        const descricaoStatus = document.getElementById('modalDescricaoStatus').value;
+        
+        try {
+            const response = await fetch(`/api/atualizar-exame/${exameId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: status,
+                    descricao_status: descricaoStatus
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showAlert(result.message, 'success');
+                exameModal.hide();
+                carregarExames();
+            } else {
+                showAlert(result.message, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro ao atualizar exame: ' + error.message, 'danger');
+        }
+    }
+</script>
+{% endblock %}

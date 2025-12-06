@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Configurações{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0"><i class="bi bi-gear"></i> Painel de Administração</h3>
+                </div>
+                <div class="card-body p-4">
+                    <form id="adminForm">
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 mb-3">
+                                <i class="bi bi-building"></i> Informações da Empresa
+                            </h5>
+                            
+                            <div class="mb-3">
+                                <label for="companyName" class="form-label">
+                                    <i class="bi bi-briefcase"></i> Nome da Empresa
+                                </label>
+                                <input type="text" class="form-control" id="companyName" 
+                                       placeholder="Ex: Plano de Saúde Premium" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="logoUpload" class="form-label">
+                                    <i class="bi bi-image"></i> Logo da Empresa
+                                </label>
+                                <input type="file" class="form-control" id="logoUpload" 
+                                       accept="image/*" onchange="previewLogo(event)">
+                                <small class="text-muted">Formatos aceitos: JPG, PNG, SVG (Máx: 2MB)</small>
+                            </div>
+                            
+                            <div id="logoPreview" class="text-center mb-3 d-none">
+                                <p class="text-muted mb-2">Preview do Logo:</p>
+                                <img id="logoPreviewImg" src="" alt="Preview" 
+                                     style="max-height: 100px; max-width: 300px; border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px;">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 mb-3">
+                                <i class="bi bi-database"></i> Configurações do Elasticsearch
+                            </h5>
+                            
+                            <div class="mb-3">
+                                <label for="esUrl" class="form-label">
+                                    <i class="bi bi-link-45deg"></i> URL do Cluster Elasticsearch
+                                </label>
+                                <input type="url" class="form-control" id="esUrl" 
+                                       placeholder="https://seu-cluster.es.io:9200" required>
+                                <small class="text-muted">Exemplo: https://localhost:9200 ou URL do Elastic Cloud</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="esApiKey" class="form-label">
+                                    <i class="bi bi-key"></i> API Key
+                                </label>
+                                <input type="password" class="form-control" id="esApiKey" 
+                                       placeholder="Sua API Key do Elasticsearch" required>
+                                <small class="text-muted">A API Key deve ter permissão de leitura e escrita no índice "pedidos_medicos"</small>
+                            </div>
+                            
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i> 
+                                <strong>Importante:</strong> Essas informações são armazenadas apenas na sessão. 
+                                Configure novamente caso feche o navegador.
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-save"></i> Salvar Configurações
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let logoBase64 = '';
+    
+    // Carrega configurações existentes
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const response = await fetch('/api/get-config');
+            const config = await response.json();
+            
+            if (config.company_name) {
+                document.getElementById('companyName').value = config.company_name;
+            }
+            
+            if (config.logo) {
+                logoBase64 = config.logo;
+                document.getElementById('logoPreviewImg').src = config.logo;
+                document.getElementById('logoPreview').classList.remove('d-none');
+            }
+        } catch (error) {
+            console.error('Erro ao carregar configurações:', error);
+        }
+    });
+    
+    function previewLogo(event) {
+        const file = event.target.files[0];
+        
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) {
+                showAlert('O arquivo é muito grande. Tamanho máximo: 2MB', 'danger');
+                event.target.value = '';
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                logoBase64 = e.target.result;
+                document.getElementById('logoPreviewImg').src = logoBase64;
+                document.getElementById('logoPreview').classList.remove('d-none');
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    
+    document.getElementById('adminForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const companyName = document.getElementById('companyName').value;
+        const esUrl = document.getElementById('esUrl').value;
+        const esApiKey = document.getElementById('esApiKey').value;
+        
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Salvando...';
+        
+        try {
+            const response = await fetch('/api/save-config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    company_name: companyName,
+                    logo: logoBase64,
+                    es_url: esUrl,
+                    es_api_key: esApiKey
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showAlert(result.message, 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showAlert(result.message, 'danger');
+            }
+        } catch (error) {
+            showAlert('Erro ao salvar configurações: ' + error.message, 'danger');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-save"></i> Salvar Configurações';
+        }
+    });
+</script>
+{% endblock %}
